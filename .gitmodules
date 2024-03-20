@@ -1,0 +1,6 @@
+[submodule "third_party/dynlibutils"]
+	path = third_party/dynlibutils
+	url = https://github.com/komashchenko/DynLibUtils
+[submodule "hl2sdk-manifests"]
+	path = hl2sdk-manifests
+	url = https://github.com/alliedmodders/hl2sdk-manifests
