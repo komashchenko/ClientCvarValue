@@ -23,7 +23,7 @@
 
 constexpr int CLIENTLANGUAGEID = INT_MAX;
 constexpr int CLIENTOPERATINGSYSTEMID = INT_MAX - 1;
-constexpr int ProcessRespondCvarValueOffset = WIN_LINUX(39, 40);
+constexpr int ProcessRespondCvarValueOffset = WIN_LINUX(38, 40);
 constexpr int ClientSlotOffset = WIN_LINUX(208, 224);
 constexpr int SendNetMessageOffset = WIN_LINUX(34, 35);
 
