@@ -117,8 +117,11 @@ bool ClientCvarValue::OnProcessRespondCvarValue(const CCLCMsg_RespondCvarValue& 
 
 void ClientCvarValue::OnClientConnected(CPlayerSlot nSlot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer)
 {
-	SendCvarValueQueryToClient(nSlot, "cl_language", CLIENTLANGUAGEID);
-	SendCvarValueQueryToClient(nSlot, "engine_ostype", CLIENTOPERATINGSYSTEMID);
+	if (!bFakePlayer)
+	{
+		SendCvarValueQueryToClient(nSlot, "cl_language", CLIENTLANGUAGEID);
+		SendCvarValueQueryToClient(nSlot, "engine_ostype", CLIENTOPERATINGSYSTEMID);
+	}
 
 	RETURN_META(MRES_IGNORED);
 }
