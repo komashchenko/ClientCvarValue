@@ -25,7 +25,6 @@ constexpr int CLIENTLANGUAGEID = INT_MAX;
 constexpr int CLIENTOPERATINGSYSTEMID = INT_MAX - 1;
 constexpr int ProcessRespondCvarValueOffset = WIN_LINUX(38, 40);
 constexpr int ClientSlotOffset = WIN_LINUX(208, 224);
-constexpr int SendNetMessageOffset = WIN_LINUX(34, 35);
 
 ClientCvarValue g_ClientCvarValue;
 PLUGIN_EXPOSE(ClientCvarValue, g_ClientCvarValue);
@@ -147,7 +146,7 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 		msg.set_cookie(iQueryCvarCookie);
 		msg.set_cvar_name(pszCvarName);
 
-		CallVFunc<void, SendNetMessageOffset, INetworkSerializable*, const google::protobuf::Message&, int>(pNetChannel, pMsg, msg, -1);
+		pNetChannel->SendNetMessage(pMsg, &msg, BUF_DEFAULT);
 
 		return iQueryCvarCookie;
 	}
