@@ -138,15 +138,17 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 
 	if (pNetChannel)
 	{
-		static INetworkSerializable* pMsg = g_pNetworkMessages->FindNetworkMessagePartial("CSVCMsg_GetCvarValue");
+		static INetworkMessageInternal* pMsg = g_pNetworkMessages->FindNetworkMessagePartial("CSVCMsg_GetCvarValue");
 		static int iQueryCvarCookieCounter = 0;
 		int iQueryCvarCookie = iQueryCvarCookieOverride == -1 ? ++iQueryCvarCookieCounter : iQueryCvarCookieOverride;
 
-		CSVCMsg_GetCvarValue msg;
-		msg.set_cookie(iQueryCvarCookie);
-		msg.set_cvar_name(pszCvarName);
+		CNetMessagePB<CSVCMsg_GetCvarValue>* msg = pMsg->AllocateMessage()->ToPB<CSVCMsg_GetCvarValue>();
+		msg->set_cookie(iQueryCvarCookie);
+		msg->set_cvar_name(pszCvarName);
 
-		pNetChannel->SendNetMessage(pMsg, &msg, BUF_DEFAULT);
+		pNetChannel->SendNetMessage(pMsg, msg, BUF_DEFAULT);
+		
+		pMsg->DeallocateMessage(msg);
 
 		return iQueryCvarCookie;
 	}
