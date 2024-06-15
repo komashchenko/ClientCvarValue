@@ -17,7 +17,6 @@
 #include "client_cvar_value.h"
 #include <networksystem/inetworkserializer.h>
 #include <networksystem/inetworkmessages.h>
-#include <inetchannel.h>
 #include "utils.hpp"
 #include <module.h>
 
@@ -31,7 +30,7 @@ PLUGIN_EXPOSE(ClientCvarValue, g_ClientCvarValue);
 
 IVEngineServer2* engine = nullptr;
 
-SH_DECL_MANUALHOOK1(OnProcessRespondCvarValue, ProcessRespondCvarValueOffset, 0, 0, bool, const CCLCMsg_RespondCvarValue&);
+SH_DECL_MANUALHOOK1(OnProcessRespondCvarValue, ProcessRespondCvarValueOffset, 0, 0, bool, const CNetMessage*);
 SH_DECL_HOOK6_void(ISource2GameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, char const*, uint64, const char*, const char*, bool);
 SH_DECL_HOOK5_void(ISource2GameClients, ClientDisconnect, SH_NOATTRIB, 0, CPlayerSlot, ENetworkDisconnectionReason, const char*, uint64, const char*);
 
@@ -78,21 +77,21 @@ void* ClientCvarValue::OnMetamodQuery(const char* iface, int* ret)
 	return nullptr;
 }
 
-bool ClientCvarValue::OnProcessRespondCvarValue(const CCLCMsg_RespondCvarValue& msg)
+bool ClientCvarValue::OnProcessRespondCvarValue(const CNetMessage* pData)
 {
+	auto msg = const_cast<CNetMessage*>(pData)->ToPB<CCLCMsg_RespondCvarValue>();
 	int nSlot = DynLibUtils::CMemory(META_IFACEPTR(void)).Offset(ClientSlotOffset).GetValue<int>();
-
-	switch (msg.cookie())
+	switch (msg->cookie())
 	{
 		case CLIENTLANGUAGEID:
 		{
-			m_ClientCvarData[nSlot].m_sLanguage = msg.value();
+			m_ClientCvarData[nSlot].m_sLanguage = msg->value();
 
 			break;
 		}
 		case CLIENTOPERATINGSYSTEMID:
 		{
-			m_ClientCvarData[nSlot].m_sOperatingSystem = msg.value();
+			m_ClientCvarData[nSlot].m_sOperatingSystem = msg->value();
 
 			break;
 		}
@@ -100,10 +99,10 @@ bool ClientCvarValue::OnProcessRespondCvarValue(const CCLCMsg_RespondCvarValue& 
 		default:
 		{
 			auto& queryCallback = m_ClientCvarData[nSlot].m_QueryCallback;
-			auto it = queryCallback.find(msg.cookie());
+			auto it = queryCallback.find(msg->cookie());
 			if (it != queryCallback.end())
 			{
-				it->second(nSlot, static_cast<ECvarValueStatus>(msg.status_code()), msg.name().c_str(), msg.value().c_str());
+				it->second(nSlot, static_cast<ECvarValueStatus>(msg->status_code()), msg->name().c_str(), msg->value().c_str());
 				queryCallback.erase(it);
 			}
 
@@ -149,7 +148,6 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 		pNetChannel->SendNetMessage(pMsg, msg, BUF_DEFAULT);
 		
 		pMsg->DeallocateMessage(msg);
-
 		return iQueryCvarCookie;
 	}
 

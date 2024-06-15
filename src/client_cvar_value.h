@@ -21,6 +21,7 @@
 #include <sh_vector.h>
 #include "iclientcvarvalue.h"
 #include <playerslot.h>
+#include <inetchannel.h>
 #include <netmessages.pb.h>
 #include <string>
 #include <array>
@@ -42,7 +43,7 @@ private:
 	const char* GetDate();
 	const char* GetLogTag();
 
-	bool OnProcessRespondCvarValue(const CCLCMsg_RespondCvarValue& msg);
+	bool OnProcessRespondCvarValue(const CNetMessage* pData);
 	void OnClientConnected(CPlayerSlot nSlot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer);
 	void OnClientDisconnect(CPlayerSlot nSlot, ENetworkDisconnectionReason reason, const char* pszName, uint64 xuid, const char* pszNetworkID);
 
