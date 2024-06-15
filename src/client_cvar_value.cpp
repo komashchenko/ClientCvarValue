@@ -31,7 +31,7 @@ PLUGIN_EXPOSE(ClientCvarValue, g_ClientCvarValue);
 
 IVEngineServer2* engine = nullptr;
 
-SH_DECL_MANUALHOOK1(OnProcessRespondCvarValue, ProcessRespondCvarValueOffset, 0, 0, bool, const CCLCMsg_RespondCvarValue&);
+SH_DECL_MANUALHOOK1(OnProcessRespondCvarValue, ProcessRespondCvarValueOffset, 0, 0, bool, const CNetMessagePB<CCLCMsg_RespondCvarValue>&);
 SH_DECL_HOOK6_void(ISource2GameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, char const*, uint64, const char*, const char*, bool);
 SH_DECL_HOOK5_void(ISource2GameClients, ClientDisconnect, SH_NOATTRIB, 0, CPlayerSlot, ENetworkDisconnectionReason, const char*, uint64, const char*);
 
@@ -78,7 +78,7 @@ void* ClientCvarValue::OnMetamodQuery(const char* iface, int* ret)
 	return nullptr;
 }
 
-bool ClientCvarValue::OnProcessRespondCvarValue(const CCLCMsg_RespondCvarValue& msg)
+bool ClientCvarValue::OnProcessRespondCvarValue(const CNetMessagePB<CCLCMsg_RespondCvarValue>& msg)
 {
 	int nSlot = DynLibUtils::CMemory(META_IFACEPTR(void)).Offset(ClientSlotOffset).GetValue<int>();
 
