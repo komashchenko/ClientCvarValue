@@ -209,7 +209,7 @@ const char* ClientCvarValue::GetLicense()
 
 const char* ClientCvarValue::GetVersion()
 {
-	return "1.0.5";
+	return "1.0.6";
 }
 
 const char* ClientCvarValue::GetDate()
