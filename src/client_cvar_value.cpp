@@ -148,7 +148,7 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 
 		pNetChannel->SendNetMessage(pMsg, msg, BUF_DEFAULT);
 		
-		pMsg->DeallocateMessage(msg);
+		delete msg;
 
 		return iQueryCvarCookie;
 	}
