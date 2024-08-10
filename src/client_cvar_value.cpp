@@ -146,9 +146,9 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 		msg->set_cookie(iQueryCvarCookie);
 		msg->set_cvar_name(pszCvarName);
 
-		pNetChannel->SendNetMessage(pMsg, msg, BUF_DEFAULT);
+		pNetChannel->SendNetMessage(msg, BUF_DEFAULT);
 		
-		pMsg->DeallocateMessage(msg);
+		delete msg;
 
 		return iQueryCvarCookie;
 	}
@@ -209,7 +209,7 @@ const char* ClientCvarValue::GetLicense()
 
 const char* ClientCvarValue::GetVersion()
 {
-	return "1.0.5";
+	return "1.0.6";
 }
 
 const char* ClientCvarValue::GetDate()
