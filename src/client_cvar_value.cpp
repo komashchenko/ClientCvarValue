@@ -25,7 +25,7 @@
 constexpr int CLIENTLANGUAGEID = INT_MAX;
 constexpr int CLIENTOPERATINGSYSTEMID = INT_MAX - 1;
 constexpr int ProcessRespondCvarValueOffset = WIN_LINUX(39, 41);
-constexpr int ClientSlotOffset = WIN_LINUX(72, 88);
+constexpr int ClientSlotOffset = WIN_LINUX(64, 72);
 
 ClientCvarValue g_ClientCvarValue;
 PLUGIN_EXPOSE(ClientCvarValue, g_ClientCvarValue);
