@@ -31,17 +31,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang python3-pip
+          sudo apt-get install -y clang-16 python3-pip
+          ln -sf /usr/bin/clang-16 /usr/bin/clang && ln -sf /usr/bin/clang++-16 /usr/bin/clang++
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
           clang --version
           clang++ --version
-
-      - name: Install Clang 16
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          apt update && apt install -y clang-16
-          ln -sf /usr/bin/clang-16 /usr/bin/clang && ln -sf /usr/bin/clang++-16 /usr/bin/clang++
 
       - name: Install AMBuild
         run: |
