@@ -15,6 +15,7 @@
  */
 
 #include "client_cvar_value.h"
+#include "sdk/recipientfilters.h"
 #include <networksystem/inetworkserializer.h>
 #include <networksystem/inetworkmessages.h>
 #include <inetchannel.h>
@@ -146,8 +147,8 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 		msg->set_cookie(iQueryCvarCookie);
 		msg->set_cvar_name(pszCvarName);
 
-		uint64 clients = { 1llu << nSlot.Get() };
-		g_pGameEventSystem->PostEventAbstract(-1, false, nSlot.Get() + 1, &clients, pMsg, msg, 0, BUF_RELIABLE);
+		CSingleRecipientFilter filter(nSlot);
+		g_pGameEventSystem->PostEventAbstract(0, false, &filter, pMsg, msg, 0);
 		
 		delete msg;
 
@@ -210,7 +211,7 @@ const char* ClientCvarValue::GetLicense()
 
 const char* ClientCvarValue::GetVersion()
 {
-	return "1.0.8";
+	return "1.0.9";
 }
 
 const char* ClientCvarValue::GetDate()
@@ -225,7 +226,7 @@ const char* ClientCvarValue::GetLogTag()
 
 const char* ClientCvarValue::GetAuthor()
 {
-	return u8"Phoenix (˙·٠●Феникс●٠·˙)";
+	return "Phoenix (˙·٠●Феникс●٠·˙)";
 }
 
 const char* ClientCvarValue::GetDescription()
