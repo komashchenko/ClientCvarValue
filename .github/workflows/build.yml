@@ -37,6 +37,12 @@ jobs:
           clang --version
           clang++ --version
 
+      - name: Install Clang 16
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          apt update && apt install -y clang-16
+          ln -sf /usr/bin/clang-16 /usr/bin/clang && ln -sf /usr/bin/clang++-16 /usr/bin/clang++
+
       - name: Install AMBuild
         run: |
           python -m pip install --upgrade pip setuptools wheel
