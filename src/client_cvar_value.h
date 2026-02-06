@@ -2,7 +2,7 @@
  * vim: set ts=4 sw=4 tw=99 noet :
  * ======================================================
  * ClientCvarValue
- * Written by Phoenix (˙·٠●Феникс●٠·˙) 2024.
+ * Written by Phoenix (˙·٠●Феникс●٠·˙) 2026.
  * ======================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
