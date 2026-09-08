@@ -18,7 +18,6 @@
 #define _INCLUDE_METAMOD_SOURCE_STUB_PLUGIN_H_
 
 #include <ISmmPlugin.h>
-#include <sh_vector.h>
 #include "iclientcvarvalue.h"
 #include <playerslot.h>
 #include <networksystem/netmessage.h>
@@ -26,9 +25,13 @@
 #include <string>
 #include <array>
 
+class CServerSideClient;
+
 class ClientCvarValue final : public ISmmPlugin, public IMetamodListener, public IClientCvarValue
 {
 public:
+	ClientCvarValue();
+
 	bool Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool late);
 	bool Unload(char* error, size_t maxlen);
 	void* OnMetamodQuery(const char* iface, int* ret);
@@ -43,13 +46,15 @@ private:
 	const char* GetDate();
 	const char* GetLogTag();
 
-	bool OnProcessRespondCvarValue(const CNetMessagePB<CCLCMsg_RespondCvarValue>& msg);
-	void OnClientConnected(CPlayerSlot nSlot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer);
-	void OnClientDisconnect(CPlayerSlot nSlot, ENetworkDisconnectionReason reason, const char* pszName, uint64 xuid, const char* pszNetworkID);
+	KHook::Return<bool> OnProcessRespondCvarValue(CServerSideClient* pClient, const CNetMessagePB<CCLCMsg_RespondCvarValue>& msg);
+	KHook::Return<void> OnClientConnected(ISource2GameClients*, CPlayerSlot nSlot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer);
+	KHook::Return<void> OnClientDisconnect(ISource2GameClients*, CPlayerSlot nSlot, ENetworkDisconnectionReason reason, const char* pszName, uint64 xuid, const char* pszNetworkID);
 
 	int SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* pszCvarName, int iQueryCvarCookieOverride = -1);
 
-	int m_iProcessRespondCvarValueID;
+	KHook::Virtual<CServerSideClient, bool, const CNetMessagePB<CCLCMsg_RespondCvarValue>&> m_ProcessRespondCvarValueHook;
+	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, char const*, uint64, const char*, const char*, bool> m_OnClientConnectedHook;
+	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, ENetworkDisconnectionReason, const char*, uint64, const char*> m_ClientDisconnectHook;
 
 private: // IClientCvarValue
 	bool QueryCvarValue(CPlayerSlot nSlot, const char* pszCvarName, CvarValueCallback callback) override;

@@ -32,9 +32,12 @@ PLUGIN_EXPOSE(ClientCvarValue, g_ClientCvarValue);
 
 IGameEventSystem* g_pGameEventSystem = nullptr;
 
-SH_DECL_MANUALHOOK1(OnProcessRespondCvarValue, ProcessRespondCvarValueOffset, 0, 0, bool, const CNetMessagePB<CCLCMsg_RespondCvarValue>&);
-SH_DECL_HOOK6_void(ISource2GameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, char const*, uint64, const char*, const char*, bool);
-SH_DECL_HOOK5_void(ISource2GameClients, ClientDisconnect, SH_NOATTRIB, 0, CPlayerSlot, ENetworkDisconnectionReason, const char*, uint64, const char*);
+ClientCvarValue::ClientCvarValue()
+	: m_ProcessRespondCvarValueHook(ProcessRespondCvarValueOffset, this, nullptr, &ClientCvarValue::OnProcessRespondCvarValue),
+	  m_OnClientConnectedHook(&ISource2GameClients::OnClientConnected, this, nullptr, &ClientCvarValue::OnClientConnected),
+	  m_ClientDisconnectHook(&ISource2GameClients::ClientDisconnect, this, &ClientCvarValue::OnClientDisconnect, nullptr)
+{
+}
 
 bool ClientCvarValue::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool late)
 {
@@ -46,9 +49,15 @@ bool ClientCvarValue::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxle
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
 
 	void* pCServerSideClientVTable = DynLibUtils::CModule(g_pEngineServer).GetVirtualTableByName("CServerSideClient");
-	m_iProcessRespondCvarValueID = SH_ADD_MANUALDVPHOOK(OnProcessRespondCvarValue, pCServerSideClientVTable, SH_MEMBER(this, &ClientCvarValue::OnProcessRespondCvarValue), true);
-	SH_ADD_HOOK(ISource2GameClients, OnClientConnected, g_pSource2GameClients, SH_MEMBER(this, &ClientCvarValue::OnClientConnected), true);
-	SH_ADD_HOOK(ISource2GameClients, ClientDisconnect, g_pSource2GameClients, SH_MEMBER(this, &ClientCvarValue::OnClientDisconnect), false);
+	if (!pCServerSideClientVTable)
+	{
+		V_strncpy(error, "Failed to find the CServerSideClient vtable.", maxlen);
+		return false;
+	}
+
+	m_ProcessRespondCvarValueHook.AddGlobal(reinterpret_cast<CServerSideClient*>(&pCServerSideClientVTable));
+	m_OnClientConnectedHook.Add(g_pSource2GameClients);
+	m_ClientDisconnectHook.Add(g_pSource2GameClients);
 
 	g_SMAPI->AddListener(this, this);
 
@@ -57,9 +66,9 @@ bool ClientCvarValue::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxle
 
 bool ClientCvarValue::Unload(char *error, size_t maxlen)
 {
-	SH_REMOVE_HOOK(ISource2GameClients, ClientDisconnect, g_pSource2GameClients, SH_MEMBER(this, &ClientCvarValue::OnClientDisconnect), false);
-	SH_REMOVE_HOOK(ISource2GameClients, OnClientConnected, g_pSource2GameClients, SH_MEMBER(this, &ClientCvarValue::OnClientConnected), true);
-	SH_REMOVE_HOOK_ID(m_iProcessRespondCvarValueID);
+	m_ClientDisconnectHook.Remove(g_pSource2GameClients);
+	m_OnClientConnectedHook.Remove(g_pSource2GameClients);
+	m_ProcessRespondCvarValueHook.ClearHooks();
 
 	return true;
 }
@@ -80,9 +89,9 @@ void* ClientCvarValue::OnMetamodQuery(const char* iface, int* ret)
 	return nullptr;
 }
 
-bool ClientCvarValue::OnProcessRespondCvarValue(const CNetMessagePB<CCLCMsg_RespondCvarValue>& msg)
+KHook::Return<bool> ClientCvarValue::OnProcessRespondCvarValue(CServerSideClient* pClient, const CNetMessagePB<CCLCMsg_RespondCvarValue>& msg)
 {
-	int nSlot = DynLibUtils::CMemory(META_IFACEPTR(void)).Offset(ClientSlotOffset).GetValue<int>();
+	int nSlot = DynLibUtils::CMemory(pClient).Offset(ClientSlotOffset).GetValue<int>();
 
 	switch (msg.cookie())
 	{
@@ -113,10 +122,10 @@ bool ClientCvarValue::OnProcessRespondCvarValue(const CNetMessagePB<CCLCMsg_Resp
 		}
 	}
 
-	RETURN_META_VALUE(MRES_IGNORED, true);
+	return {KHook::Action::Ignore, true};
 }
 
-void ClientCvarValue::OnClientConnected(CPlayerSlot nSlot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer)
+KHook::Return<void> ClientCvarValue::OnClientConnected(ISource2GameClients*, CPlayerSlot nSlot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer)
 {
 	if (!bFakePlayer)
 	{
@@ -124,14 +133,14 @@ void ClientCvarValue::OnClientConnected(CPlayerSlot nSlot, const char* pszName, 
 		SendCvarValueQueryToClient(nSlot, "engine_ostype", CLIENTOPERATINGSYSTEMID);
 	}
 
-	RETURN_META(MRES_IGNORED);
+	return {KHook::Action::Ignore};
 }
 
-void ClientCvarValue::OnClientDisconnect(CPlayerSlot nSlot, ENetworkDisconnectionReason reason, const char* pszName, uint64 xuid, const char* pszNetworkID)
+KHook::Return<void> ClientCvarValue::OnClientDisconnect(ISource2GameClients*, CPlayerSlot nSlot, ENetworkDisconnectionReason reason, const char* pszName, uint64 xuid, const char* pszNetworkID)
 {
 	m_ClientCvarData[nSlot.Get()].Reset();
 
-	RETURN_META(MRES_IGNORED);
+	return {KHook::Action::Ignore};
 }
 
 int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* pszCvarName, int iQueryCvarCookieOverride)
