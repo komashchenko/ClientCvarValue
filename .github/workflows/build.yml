@@ -38,9 +38,11 @@ jobs:
           clang++ --version
 
       - name: Install AMBuild
+        shell: bash
         run: |
           git clone https://github.com/alliedmodders/ambuild
-          cd ambuild && python setup.py install
+          cd ambuild
+          python -m pip install . || python setup.py install
 
       - name: Checkout
         uses: actions/checkout@v7
