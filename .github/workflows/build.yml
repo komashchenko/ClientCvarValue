@@ -43,20 +43,20 @@ jobs:
           pip install git+https://github.com/alliedmodders/ambuild
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: project
           submodules: recursive
 
       - name: Checkout CS2 SDK
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: alliedmodders/hl2sdk
           ref: cs2
           path: hl2sdk-cs2
 
       - name: Checkout Metamod:Source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: alliedmodders/metamod-source
           ref: master
@@ -72,7 +72,7 @@ jobs:
           ambuild
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ runner.os }}
           path: project/build/package
@@ -85,7 +85,7 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
 
       - name: Package
         run: |
