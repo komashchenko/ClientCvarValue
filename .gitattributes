@@ -1,0 +1,9 @@
+# Use CRLF in working-tree text files; Git stores normalized LF.
+* text=auto eol=crlf
+
+# Unix shell scripts require LF when executed directly.
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+*.ksh text eol=lf
+*.fish text eol=lf

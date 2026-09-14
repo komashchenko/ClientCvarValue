@@ -1,0 +1,20 @@
+set(SOURCESDK_DIR "${PROJECT_SOURCE_DIR}/third_party/sourcesdk" CACHE PATH "Source SDK checkout")
+
+if(NOT EXISTS "${SOURCESDK_DIR}/CMakeLists.txt")
+	message(FATAL_ERROR "Missing SOURCESDK")
+endif()
+
+set(SOURCESDK_GAME_TARGET cs2 CACHE STRING "Source SDK game target" FORCE)
+set(SOURCESDK_AM_DEFINES ON CACHE BOOL "Use AlliedModders definitions" FORCE)
+set(SOURCESDK_COMPILE_PROTOBUF ON CACHE BOOL "Build SDK protobuf messages" FORCE)
+set(SOURCESDK_USE_MINIMAL_PROTOS ON CACHE BOOL "Use the SDK-required protobuf messages" FORCE)
+set(SOURCESDK_CONFIGURE_EXPORT_MAP ON CACHE BOOL "Use the SDK export map" FORCE)
+set(SOURCESDK_ENABLE_TESTS OFF CACHE BOOL "Build SDK tests" FORCE)
+set(SOURCESDK_LINK_ENABLE_RPATH OFF CACHE BOOL "Use the engine library search path" FORCE)
+set(SOURCESDK_LINK_STEAMWORKS OFF CACHE BOOL "Link Steamworks" FORCE)
+set(SOURCESDK_LINK_STRIP_SYMBOLS OFF CACHE BOOL "Keep debug symbols" FORCE)
+set(SOURCESDK_MALLOC_OVERRIDE ON CACHE BOOL "Use Valve allocator overrides" FORCE)
+set(SOURCESDK_USE_ABI0 ON CACHE BOOL "Use the Source 2 C++ ABI" FORCE)
+set(protobuf_WITH_ZLIB OFF CACHE BOOL "Do not add a host-specific zlib dependency" FORCE)
+
+add_subdirectory("${SOURCESDK_DIR}" sourcesdk EXCLUDE_FROM_ALL)

@@ -2,6 +2,10 @@ name: Build
 
 on:
   push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
     paths-ignore:
       - LICENSE
       - README.md
@@ -11,92 +15,140 @@ on:
       - README.md
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
 jobs:
-  build:
-    name: Build on ${{ matrix.os_short }}
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
+  build-linux:
+    name: Linux / ${{ matrix.preset }}
+    runs-on: ubuntu-latest
+    container: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest-container-runtime-depot
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            os_short: linux
-            container: registry.gitlab.steamos.cloud/steamrt/sniper/sdk
-          - os: windows-latest
-            os_short: win
-    steps:
-      - name: Install dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -o Acquire::Check-Valid-Until=false
-          sudo apt-get install -y clang
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "CXX=clang++" >> $GITHUB_ENV
-          clang --version
-          clang++ --version
-
-      - name: Install AMBuild
+        preset: [Debug, RelWithDebInfo, Release]
+    defaults:
+      run:
         shell: bash
-        run: |
-          git clone https://github.com/alliedmodders/ambuild
-          cd ambuild
-          python -m pip install . || python setup.py install
-
+    env:
+      CC: clang
+      CXX: clang++
+      BUILD_PRESET: ${{ matrix.preset }}
+    steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          path: project
           submodules: recursive
+          persist-credentials: false
 
-      - name: Checkout CS2 SDK
-        uses: actions/checkout@v7
-        with:
-          repository: alliedmodders/hl2sdk
-          ref: cs2
-          path: hl2sdk-cs2
-
-      - name: Checkout Metamod:Source
-        uses: actions/checkout@v7
-        with:
-          repository: alliedmodders/metamod-source
-          ref: master
-          path: metamod-source
-          submodules: recursive
+      - name: Build environment
+        run: |
+          cat /etc/os-release
+          cmake --version
+          ninja --version
+          clang --version
+          clang++ --version
 
       - name: Build
-        working-directory: project
-        shell: bash
         run: |
-          mkdir build && cd build
-          python ../configure.py --enable-optimize --sdks=cs2 --targets=x86_64 --hl2sdk-manifests=./hl2sdk-manifests
-          ambuild
+          cmake --preset "$BUILD_PRESET"
+          cmake --build --preset "$BUILD_PRESET" --parallel "$(nproc)"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ runner.os }}
-          path: project/build/package
+          name: linux-${{ matrix.preset }}
+          path: build/Linux/${{ matrix.preset }}/package
+          if-no-files-found: error
+          retention-days: 14
+
+  build-windows:
+    name: Windows / ${{ matrix.preset }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [Debug, RelWithDebInfo, Release]
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      BUILD_PRESET: ${{ matrix.preset }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build environment
+        run: |
+          Write-Output "MSVC tools: $env:VCToolsVersion"
+          cmake --version
+          ninja --version
+
+      - name: Build
+        run: |
+          cmake --preset $env:BUILD_PRESET
+          cmake --build --preset $env:BUILD_PRESET --parallel $env:NUMBER_OF_PROCESSORS
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-${{ matrix.preset }}
+          path: build/Windows/${{ matrix.preset }}/package
+          if-no-files-found: error
+          retention-days: 14
 
   release:
     name: Release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v8
+        with:
+          path: artifacts
 
       - name: Package
+        working-directory: artifacts
         run: |
-          7z a -mx9 linux.zip ./Linux/*
-          7z a -mx9 windows.zip ./Windows/*
+          for platform in linux windows; do
+            for preset in Release RelWithDebInfo; do
+              archive="$platform"
+              if [[ "$preset" == "RelWithDebInfo" ]]; then
+                archive+="-relwithdebinfo"
+              fi
+              (
+                cd "$platform-$preset"
+                7z a -tzip -mx=9 "../$archive.zip" addons
+              )
+            done
+          done
+
       - name: Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: '*.zip'
-          tag: ${{ github.ref }}
+          file: 'artifacts/*.zip'
+          tag: ${{ github.ref_name }}
           file_glob: true

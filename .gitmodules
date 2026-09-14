@@ -1,6 +1,9 @@
 [submodule "third_party/dynlibutils"]
 	path = third_party/dynlibutils
-	url = https://github.com/komashchenko/DynLibUtils
-[submodule "hl2sdk-manifests"]
-	path = hl2sdk-manifests
-	url = https://github.com/alliedmodders/hl2sdk-manifests
+	url = https://github.com/Wend4r/cpp-dynlibutils
+[submodule "third_party/sourcesdk"]
+	path = third_party/sourcesdk
+	url = https://github.com/Wend4r/sourcesdk
+[submodule "third_party/metamod"]
+	path = third_party/metamod
+	url = https://github.com/alliedmodders/metamod-source

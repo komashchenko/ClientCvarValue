@@ -1,0 +1,16 @@
+services:
+  build-linux:
+    image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest-container-runtime-depot
+    platform: linux/amd64
+    working_dir: /workspace
+    network_mode: none
+    environment:
+      CC: clang
+      CXX: clang++
+    volumes:
+      - .:/workspace
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        cmake --preset RelWithDebInfo &&
+        cmake --build --preset RelWithDebInfo --parallel 6

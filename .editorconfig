@@ -1,0 +1,13 @@
+root = true
+
+[*]
+end_of_line = crlf
+insert_final_newline = true
+
+[*.{sh,bash,zsh,ksh,fish}]
+end_of_line = lf
+
+# Dependencies manage their own formatting.
+[third_party/**]
+end_of_line = unset
+insert_final_newline = unset

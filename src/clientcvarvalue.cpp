@@ -2,7 +2,7 @@
  * vim: set ts=4 sw=4 tw=99 noet :
  * ======================================================
  * ClientCvarValue
- * Written by Phoenix (˙·٠●Феникс●٠·˙) 2026.
+ * Copyright (C) 2024-2026 komashchenko (Phoenix)
  * ======================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -14,26 +14,22 @@
  * the use of this software.
  */
 
-#include "client_cvar_value.h"
+#include "clientcvarvalue.h"
 #include <networksystem/inetworkserializer.h>
 #include <networksystem/inetworkmessages.h>
-#include <inetchannel.h>
-#include <igameeventsystem.h>
-#include "utils.hpp"
-#include <module.h>
+#include <dynlibutils/module.hpp>
+#include <climits>
+#include <memory>
+#include <utility>
 
 constexpr int CLIENTLANGUAGEID = INT_MAX;
 constexpr int CLIENTOPERATINGSYSTEMID = INT_MAX - 1;
-constexpr int ProcessRespondCvarValueOffset = WIN_LINUX(38, 40);
-constexpr int ClientSlotOffset = WIN_LINUX(72, 72);
 
 ClientCvarValue g_ClientCvarValue;
 PLUGIN_EXPOSE(ClientCvarValue, g_ClientCvarValue);
 
-IGameEventSystem* g_pGameEventSystem = nullptr;
-
 ClientCvarValue::ClientCvarValue()
-	: m_ProcessRespondCvarValueHook(ProcessRespondCvarValueOffset, this, nullptr, &ClientCvarValue::OnProcessRespondCvarValue),
+	: m_ProcessRespondCvarValueHook(&CServerSideClient::ProcessRespondCvarValue, this, nullptr, &ClientCvarValue::OnProcessRespondCvarValue),
 	  m_OnClientConnectedHook(&ISource2GameClients::OnClientConnected, this, nullptr, &ClientCvarValue::OnClientConnected),
 	  m_ClientDisconnectHook(&ISource2GameClients::ClientDisconnect, this, &ClientCvarValue::OnClientDisconnect, nullptr)
 {
@@ -46,7 +42,7 @@ bool ClientCvarValue::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxle
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pEngineServer, IVEngineServer2, SOURCE2ENGINETOSERVER_INTERFACE_VERSION)
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkMessages, INetworkMessages, NETWORKMESSAGES_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2GameClients, ISource2GameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
-	GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
+	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
 
 	void* pCServerSideClientVTable = DynLibUtils::CModule(g_pEngineServer).GetVirtualTableByName("CServerSideClient");
 	if (!pCServerSideClientVTable)
@@ -64,7 +60,7 @@ bool ClientCvarValue::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxle
 	return true;
 }
 
-bool ClientCvarValue::Unload(char *error, size_t maxlen)
+bool ClientCvarValue::Unload(char* error, size_t maxlen)
 {
 	m_ClientDisconnectHook.Remove(g_pSource2GameClients);
 	m_OnClientConnectedHook.Remove(g_pSource2GameClients);
@@ -89,9 +85,9 @@ void* ClientCvarValue::OnMetamodQuery(const char* iface, int* ret)
 	return nullptr;
 }
 
-KHook::Return<bool> ClientCvarValue::OnProcessRespondCvarValue(CServerSideClient* pClient, const CNetMessagePB<CCLCMsg_RespondCvarValue>& msg)
+KHook::Return<bool> ClientCvarValue::OnProcessRespondCvarValue(CServerSideClient* pClient, const CCLCMsg_RespondCvarValue_t& msg)
 {
-	int nSlot = DynLibUtils::CMemory(pClient).Offset(ClientSlotOffset).GetValue<int>();
+	CPlayerSlot nSlot = pClient->GetPlayerSlot();
 
 	switch (msg.cookie())
 	{
@@ -114,8 +110,10 @@ KHook::Return<bool> ClientCvarValue::OnProcessRespondCvarValue(CServerSideClient
 			auto it = queryCallback.find(msg.cookie());
 			if (it != queryCallback.end())
 			{
-				it->second(nSlot, static_cast<ECvarValueStatus>(msg.status_code()), msg.name().c_str(), msg.value().c_str());
+				// The callback may issue more queries or disconnect the client.
+				auto callback = std::move(it->second);
 				queryCallback.erase(it);
+				callback(nSlot, static_cast<ECvarValueStatus>(msg.status_code()), msg.name().c_str(), msg.value().c_str());
 			}
 
 			break;
@@ -147,20 +145,16 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 {
 	if (g_pEngineServer->GetPlayerNetInfo(nSlot))
 	{
-		static INetworkMessageInternal* pMsg = g_pNetworkMessages->FindNetworkMessagePartial("CSVCMsg_GetCvarValue");
+		static INetworkMessageInternal* pNetMsg = g_pNetworkMessages->FindNetworkMessage(CSVCMsg_GetCvarValue_t::sm_binding.GetName());
 		static int iQueryCvarCookieCounter = 0;
 		int iQueryCvarCookie = iQueryCvarCookieOverride == -1 ? ++iQueryCvarCookieCounter : iQueryCvarCookieOverride;
 
-		CNetMessagePB<CSVCMsg_GetCvarValue>* msg = pMsg->AllocateMessage()->ToPB<CSVCMsg_GetCvarValue>();
+		std::unique_ptr<CSVCMsg_GetCvarValue_t> msg(pNetMsg->AllocateMessage()->As<CSVCMsg_GetCvarValue_t>());
 		msg->set_cookie(iQueryCvarCookie);
 		msg->set_cvar_name(pszCvarName);
 
-		uint64 clients = { 1llu << nSlot.Get() };
-		g_pGameEventSystem->PostEventAbstract(-1, false, nSlot.Get() + 1, &clients, pMsg, msg, 0, BUF_RELIABLE);
-		
-		delete msg;
-
-		return iQueryCvarCookie;
+		if(msg->Send(nSlot))
+			return iQueryCvarCookie;
 	}
 
 	return -1;
@@ -168,7 +162,7 @@ int ClientCvarValue::SendCvarValueQueryToClient(CPlayerSlot nSlot, const char* p
 
 bool ClientCvarValue::QueryCvarValue(CPlayerSlot nSlot, const char* pszCvarName, CvarValueCallback callback)
 {
-	if (pszCvarName)
+	if (pszCvarName && callback)
 	{
 		int iQueryCvarCookie = SendCvarValueQueryToClient(nSlot, pszCvarName);
 		if (iQueryCvarCookie != -1)
@@ -219,7 +213,7 @@ const char* ClientCvarValue::GetLicense()
 
 const char* ClientCvarValue::GetVersion()
 {
-	return "1.0.10";
+	return PLUGIN_VERSION;
 }
 
 const char* ClientCvarValue::GetDate()
@@ -234,7 +228,7 @@ const char* ClientCvarValue::GetLogTag()
 
 const char* ClientCvarValue::GetAuthor()
 {
-	return u8"Phoenix (˙·٠●Феникс●٠·˙)";
+	return "komashchenko (Phoenix)";
 }
 
 const char* ClientCvarValue::GetDescription()
