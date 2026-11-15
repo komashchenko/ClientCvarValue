@@ -4,6 +4,6 @@
 [submodule "third_party/sourcesdk"]
 	path = third_party/sourcesdk
 	url = https://github.com/Wend4r/sourcesdk
-[submodule "third_party/metamod"]
-	path = third_party/metamod
+[submodule "third_party/metamod-source"]
+	path = third_party/metamod-source
 	url = https://github.com/alliedmodders/metamod-source

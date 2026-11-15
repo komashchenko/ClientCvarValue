@@ -1,4 +1,4 @@
-set(METAMOD_DIR "${PROJECT_SOURCE_DIR}/third_party/metamod" CACHE PATH "Metamod:Source checkout")
+set(METAMOD_DIR "${PROJECT_SOURCE_DIR}/third_party/metamod-source" CACHE PATH "Metamod:Source checkout")
 
 if(NOT EXISTS "${METAMOD_DIR}/core/ISmmPlugin.h")
 	message(FATAL_ERROR "Missing Metamod")
