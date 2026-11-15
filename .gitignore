@@ -1,4 +1,4 @@
 /out/
 /build/
-/CMakeUserPresets.json
 /.vs/
+/third_party/*/build/
