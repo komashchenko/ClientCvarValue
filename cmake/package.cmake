@@ -1,8 +1,12 @@
 set(PLUGIN_NAME clientcvarvalue)
-set(PLUGIN_BINARY_DIR "addons/${PLUGIN_NAME}")
+if(WIN32)
+	set(PLUGIN_BINARY_DIR "addons/${PLUGIN_NAME}/bin/win64")
+else()
+	set(PLUGIN_BINARY_DIR "addons/${PLUGIN_NAME}/bin/linuxsteamrt64")
+endif()
 set(PACKAGE_ROOT "${PROJECT_BINARY_DIR}/package")
 
-set_target_properties(clientcvarvalue PROPERTIES
+set_target_properties(ClientCvarValue PROPERTIES
 	OUTPUT_NAME "${PLUGIN_NAME}"
 	RUNTIME_OUTPUT_DIRECTORY "${PACKAGE_ROOT}/${PLUGIN_BINARY_DIR}"
 	LIBRARY_OUTPUT_DIRECTORY "${PACKAGE_ROOT}/${PLUGIN_BINARY_DIR}"
@@ -11,7 +15,7 @@ set_target_properties(clientcvarvalue PROPERTIES
 
 if(MSVC)
 	# Debug keeps incremental linking; place its database outside the package.
-	target_link_options(clientcvarvalue PRIVATE
+	target_link_options(ClientCvarValue PRIVATE
 		"$<$<CONFIG:Debug>:/ILK:${PROJECT_BINARY_DIR}/${PLUGIN_NAME}.ilk>")
 endif()
 
@@ -26,5 +30,5 @@ file(CONFIGURE
 }
 ]=]
 	@ONLY
-	NEWLINE_STYLE CRLF
+	NEWLINE_STYLE LF
 )

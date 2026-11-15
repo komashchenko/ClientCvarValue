@@ -213,7 +213,7 @@ const char* ClientCvarValue::GetLicense()
 
 const char* ClientCvarValue::GetVersion()
 {
-	return PLUGIN_VERSION;
+	return CLIENTCVARVALUE_VERSION;
 }
 
 const char* ClientCvarValue::GetDate()

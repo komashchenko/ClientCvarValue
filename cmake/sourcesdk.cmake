@@ -1,9 +1,5 @@
 set(SOURCESDK_DIR "${PROJECT_SOURCE_DIR}/third_party/sourcesdk" CACHE PATH "Source SDK checkout")
 
-if(NOT EXISTS "${SOURCESDK_DIR}/CMakeLists.txt")
-	message(FATAL_ERROR "Missing SOURCESDK")
-endif()
-
 set(SOURCESDK_GAME_TARGET cs2 CACHE STRING "Source SDK game target" FORCE)
 set(SOURCESDK_AM_DEFINES ON CACHE BOOL "Use AlliedModders definitions" FORCE)
 set(SOURCESDK_COMPILE_PROTOBUF ON CACHE BOOL "Build SDK protobuf messages" FORCE)

@@ -1,3 +1,7 @@
+if(NOT CMAKE_SYSTEM_NAME MATCHES "^(Windows|Linux)$")
+    message(FATAL_ERROR "ClientCvarValue supports Windows and Linux only")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

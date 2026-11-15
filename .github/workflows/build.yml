@@ -48,22 +48,27 @@ jobs:
 
       - name: Build environment
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           cat /etc/os-release
           cmake --version
           ninja --version
-          clang --version
-          clang++ --version
+          "$CC" --version
+          "$CXX" --version
+          git submodule status --recursive
 
       - name: Build
         run: |
           cmake --preset "$BUILD_PRESET"
           cmake --build --preset "$BUILD_PRESET" --parallel "$(nproc)"
 
+      - name: Package artifact
+        run: tar -C "out/Linux/$BUILD_PRESET/package" -czf "linux-$BUILD_PRESET.tar.gz" addons
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: linux-${{ matrix.preset }}
-          path: build/Linux/${{ matrix.preset }}/package
+          path: linux-${{ matrix.preset }}.tar.gz
           if-no-files-found: error
           retention-days: 14
 
@@ -97,6 +102,7 @@ jobs:
           Write-Output "MSVC tools: $env:VCToolsVersion"
           cmake --version
           ninja --version
+          git submodule status --recursive
 
       - name: Build
         run: |
@@ -107,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: windows-${{ matrix.preset }}
-          path: build/Windows/${{ matrix.preset }}/package
+          path: out/Windows/${{ matrix.preset }}/package
           if-no-files-found: error
           retention-days: 14
 
@@ -129,26 +135,25 @@ jobs:
         with:
           path: artifacts
 
-      - name: Package
-        working-directory: artifacts
+      - name: Package release
         run: |
-          for platform in linux windows; do
-            for preset in Release RelWithDebInfo; do
-              archive="$platform"
-              if [[ "$preset" == "RelWithDebInfo" ]]; then
-                archive+="-relwithdebinfo"
-              fi
-              (
-                cd "$platform-$preset"
-                7z a -tzip -mx=9 "../$archive.zip" addons
-              )
-            done
+          mkdir -p release
+          for preset in Release RelWithDebInfo; do
+            suffix=""
+            if [[ "$preset" == "RelWithDebInfo" ]]; then
+              suffix="-relwithdebinfo"
+            fi
+            cp "artifacts/linux-$preset/linux-$preset.tar.gz" "release/ClientCvarValue-${GITHUB_REF_NAME}-linux$suffix.tar.gz"
+            (
+              cd "artifacts/windows-$preset"
+              7z a -tzip -mx=9 "../../release/ClientCvarValue-${GITHUB_REF_NAME}-windows$suffix.zip" addons
+            )
           done
 
       - name: Release
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v3
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: 'artifacts/*.zip'
-          tag: ${{ github.ref_name }}
-          file_glob: true
+          files: |
+            release/*.tar.gz
+            release/*.zip
+          fail_on_unmatched_files: true

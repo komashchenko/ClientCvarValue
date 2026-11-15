@@ -7,10 +7,12 @@ services:
     environment:
       CC: clang
       CXX: clang++
+      BUILD_PRESET: "${BUILD_PRESET:-RelWithDebInfo}"
+      BUILD_JOBS: "${BUILD_JOBS:-4}"
     volumes:
       - .:/workspace
-    entrypoint: ["/bin/sh", "-c"]
+    entrypoint: ["/bin/bash", "-ec"]
     command:
-      - >-
-        cmake --preset RelWithDebInfo &&
-        cmake --build --preset RelWithDebInfo --parallel 6
+      - |
+        cmake --preset "$$BUILD_PRESET"
+        cmake --build --preset "$$BUILD_PRESET" --parallel "$$BUILD_JOBS"

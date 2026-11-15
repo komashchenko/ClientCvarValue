@@ -1,5 +1,5 @@
 {
-	"version": 4,
+	"version": 5,
 
 	"cmakeMinimumRequired":
 	{
@@ -14,8 +14,7 @@
 			"name": "NinjaBase",
 			"hidden": true,
 			"generator": "Ninja",
-			"description": "Build using Ninja",
-			"binaryDir": "${sourceDir}/build/${hostSystemName}/${presetName}",
+			"binaryDir": "${sourceDir}/out/${hostSystemName}/${presetName}",
 			"cacheVariables":
 			{
 				"CMAKE_EXPORT_COMPILE_COMMANDS": true
@@ -23,7 +22,6 @@
 		},
 		{
 			"name": "Debug",
-			"displayName": "Ninja - Debug",
 			"inherits": "NinjaBase",
 			"cacheVariables":
 			{
@@ -32,7 +30,6 @@
 		},
 		{
 			"name": "RelWithDebInfo",
-			"displayName": "Ninja - Release With Debug Info",
 			"inherits": "NinjaBase",
 			"cacheVariables":
 			{
@@ -41,7 +38,6 @@
 		},
 		{
 			"name": "Release",
-			"displayName": "Ninja - Release",
 			"inherits": "NinjaBase",
 			"cacheVariables":
 			{
@@ -54,21 +50,15 @@
 	[
 		{
 			"name": "Debug",
-			"displayName": "Ninja - Debug",
-			"configurePreset": "Debug",
-			"targets": ["clientcvarvalue"]
+			"configurePreset": "Debug"
 		},
 		{
 			"name": "RelWithDebInfo",
-			"displayName": "Ninja - Release With Debug Info",
-			"configurePreset": "RelWithDebInfo",
-			"targets": ["clientcvarvalue"]
+			"configurePreset": "RelWithDebInfo"
 		},
 		{
 			"name": "Release",
-			"displayName": "Ninja - Release",
-			"configurePreset": "Release",
-			"targets": ["clientcvarvalue"]
+			"configurePreset": "Release"
 		}
 	]
 }

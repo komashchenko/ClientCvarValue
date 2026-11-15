@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
 project(ClientCvarValue
 	VERSION 1.1.0
@@ -13,21 +13,21 @@ include(cmake/sourcesdk.cmake)
 include(cmake/dynlibutils.cmake)
 include(cmake/metamod.cmake)
 
-add_library(clientcvarvalue SHARED
+add_library(ClientCvarValue SHARED
 	src/clientcvarvalue.cpp
 )
 
-set_target_properties(clientcvarvalue PROPERTIES
+set_target_properties(ClientCvarValue PROPERTIES
 	PREFIX ""
 	CXX_VISIBILITY_PRESET hidden
 	VISIBILITY_INLINES_HIDDEN ON
 )
 
-target_include_directories(clientcvarvalue PRIVATE src public)
-target_compile_definitions(clientcvarvalue PRIVATE
-	PLUGIN_VERSION="${PROJECT_VERSION}"
+target_include_directories(ClientCvarValue PRIVATE src public)
+target_compile_definitions(ClientCvarValue PRIVATE
+	CLIENTCVARVALUE_VERSION="${PROJECT_VERSION}"
 )
-target_link_libraries(clientcvarvalue PRIVATE
+target_link_libraries(ClientCvarValue PRIVATE
 	sourcesdk::sourcesdk
 	cpp-memory_utils
 	clientcvarvalue_metamod
