@@ -1,0 +1,2 @@
+# Use LF for project text files in the working tree and repository.
+* text=auto eol=lf

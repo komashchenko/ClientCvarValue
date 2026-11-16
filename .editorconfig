@@ -1,0 +1,10 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+# Dependencies manage their own formatting.
+[third_party/**]
+end_of_line = unset
+insert_final_newline = unset
